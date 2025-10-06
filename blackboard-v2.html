@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="黑板">
+    <title>iPad 黑板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        #blackboard {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-color: #1a3a1a;
+            touch-action: none;
+        }
+
+        .toolbar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(50, 50, 50, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            border-radius: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+        }
+
+        .tool-btn, .size-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid transparent;
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .size-btn {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .tool-btn.active, .size-btn.active {
+            background: rgba(74, 144, 226, 0.6);
+            border-color: rgba(74, 144, 226, 1);
+        }
+
+        #colorPicker {
+            width: 44px;
+            height: 44px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        #colorPicker::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        #colorPicker::-webkit-color-swatch {
+            border: none;
+            border-radius: 10px;
+        }
+
+        .separator {
+            width: 1px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        @media (orientation: portrait) {
+            .toolbar {
+                top: auto;
+                bottom: 20px;
+                flex-wrap: wrap;
+                max-width: 90vw;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <button id="penBtn" class="tool-btn active">✏️</button>
+        <button id="eraserBtn" class="tool-btn">🧽</button>
+        <div class="separator"></div>
+        <input type="color" id="colorPicker" value="#ffffff">
+        <div class="separator"></div>
+        <button id="thinBtn" class="size-btn">细</button>
+        <button id="mediumBtn" class="size-btn active">中</button>
+        <button id="thickBtn" class="size-btn">粗</button>
+        <div class="separator"></div>
+        <button id="undoBtn" class="tool-btn">↶</button>
+        <button id="redoBtn" class="tool-btn">↷</button>
+        <div class="separator"></div>
+        <button id="clearBtn" class="tool-btn">🗑️</button>
+    </div>
+
+    <canvas id="blackboard"></canvas>
+
+    <script>
+        const canvas = document.getElementById('blackboard');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let isDrawing = false;
+        let currentColor = '#ffffff';
+        let currentSize = 3;
+        let currentTool = 'pen';
+        let lastX = 0;
+        let lastY = 0;
+        let history = [];
+        let historyStep = -1;
+
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        function saveState() {
+            historyStep++;
+            if (historyStep < history.length) {
+                history.length = historyStep;
+            }
+            history.push(canvas.toDataURL());
+        }
+
+        function undo() {
+            if (historyStep > 0) {
+                historyStep--;
+                const img = new Image();
+                img.src = history[historyStep];
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                };
+            }
+        }
+
+        function redo() {
+            if (historyStep < history.length - 1) {
+                historyStep++;
+                const img = new Image();
+                img.src = history[historyStep];
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                };
+            }
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            saveState();
+        }
+
+        function getEventPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY, pressure = 0.5;
+
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+                pressure = e.touches[0].force || 0.5;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+                pressure = e.pressure || 0.5;
+            }
+
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top,
+                pressure: pressure
+            };
+        }
+
+        function startDraw(e) {
+            e.preventDefault();
+            isDrawing = true;
+
+            const pos = getEventPos(e);
+            lastX = pos.x;
+            lastY = pos.y;
+
+            ctx.globalCompositeOperation = currentTool === 'pen' ? 'source-over' : 'destination-out';
+            ctx.strokeStyle = currentColor;
+
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+
+            const pos = getEventPos(e);
+            let lineWidth = currentSize;
+
+            // 压感支持
+            if (pos.pressure > 0) {
+                lineWidth = currentSize * (0.5 + pos.pressure * 1.5);
+            }
+
+            if (currentTool === 'eraser') {
+                lineWidth *= 5;
+            }
+
+            ctx.lineWidth = lineWidth;
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+
+            lastX = pos.x;
+            lastY = pos.y;
+        }
+
+        function stopDraw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            isDrawing = false;
+            saveState();
+        }
+
+        // Touch 事件 (支持 Apple Pencil)
+        canvas.addEventListener('touchstart', startDraw, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        canvas.addEventListener('touchend', stopDraw, { passive: false });
+        canvas.addEventListener('touchcancel', stopDraw, { passive: false });
+
+        // Mouse 事件 (用于调试)
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('mouseout', stopDraw);
+
+        // 工具栏
+        document.getElementById('penBtn').addEventListener('click', () => {
+            currentTool = 'pen';
+            document.getElementById('penBtn').classList.add('active');
+            document.getElementById('eraserBtn').classList.remove('active');
+        });
+
+        document.getElementById('eraserBtn').addEventListener('click', () => {
+            currentTool = 'eraser';
+            document.getElementById('eraserBtn').classList.add('active');
+            document.getElementById('penBtn').classList.remove('active');
+        });
+
+        document.getElementById('colorPicker').addEventListener('change', (e) => {
+            currentColor = e.target.value;
+            currentTool = 'pen';
+            document.getElementById('penBtn').classList.add('active');
+            document.getElementById('eraserBtn').classList.remove('active');
+        });
+
+        document.getElementById('thinBtn').addEventListener('click', () => {
+            currentSize = 2;
+            document.getElementById('thinBtn').classList.add('active');
+            document.getElementById('mediumBtn').classList.remove('active');
+            document.getElementById('thickBtn').classList.remove('active');
+        });
+
+        document.getElementById('mediumBtn').addEventListener('click', () => {
+            currentSize = 3;
+            document.getElementById('mediumBtn').classList.add('active');
+            document.getElementById('thinBtn').classList.remove('active');
+            document.getElementById('thickBtn').classList.remove('active');
+        });
+
+        document.getElementById('thickBtn').addEventListener('click', () => {
+            currentSize = 5;
+            document.getElementById('thickBtn').classList.add('active');
+            document.getElementById('thinBtn').classList.remove('active');
+            document.getElementById('mediumBtn').classList.remove('active');
+        });
+
+        document.getElementById('undoBtn').addEventListener('click', undo);
+        document.getElementById('redoBtn').addEventListener('click', redo);
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (confirm('确定要清空黑板吗?')) {
+                clearCanvas();
+            }
+        });
+
+        saveState();
+    </script>
+</body>
+</html>
