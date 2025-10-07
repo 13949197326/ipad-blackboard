@@ -2,618 +2,528 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>小学英语数学学习</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="黑板">
+    <link rel="manifest" href="manifest.json">
+    <title>iPad 黑板</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            width: 393px; /* iPhone 16 Pro width */
-            margin: 0 auto;
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        .safe-area {
-            padding-top: 47px; /* Dynamic Island area */
-            padding-bottom: 34px; /* Home indicator area */
-            min-height: 100vh;
-        }
-
-        .header {
-            text-align: center;
-            padding: 20px;
-            color: white;
-        }
-
-        .header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .header p {
-            font-size: 16px;
-            opacity: 0.9;
-        }
-
-        .grade-selector {
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-
-        .grade-title {
-            color: white;
-            font-size: 20px;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .grade-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        .grade-card {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            padding: 25px 15px;
-            text-align: center;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            -webkit-user-select: none;
             user-select: none;
         }
 
-        .grade-card:active {
-            transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.25);
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            position: fixed;
         }
 
-        .grade-card h3 {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .grade-card p {
-            font-size: 14px;
-            opacity: 0.8;
-        }
-
-        .subject-nav {
-            padding: 0 20px;
-            display: none;
-        }
-
-        .subject-nav.active {
+        #blackboard {
             display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            transition: background-color 0.3s;
         }
 
-        .subject-title {
-            color: white;
-            font-size: 20px;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 25px;
+        #blackboard.bg-black {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
         }
 
-        .subject-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
+        #blackboard.bg-blue {
+            background: linear-gradient(135deg, #1a2a3a 0%, #2a3a4a 50%, #1f2f3f 100%);
         }
 
-        .subject-card {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 20px;
-            padding: 25px;
+        #blackboard.bg-green {
+            background: linear-gradient(135deg, #0d1f0d 0%, #1a3a1a 50%, #152815 100%);
+        }
+
+        .toolbar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 30, 30, 0.92);
+            backdrop-filter: blur(20px);
+            padding: 10px 16px;
+            border-radius: 24px;
             display: flex;
+            gap: 8px;
             align-items: center;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .toolbar.hidden {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-100px);
+            pointer-events: none;
+        }
+
+        .tool-btn, .color-btn, .bg-btn, .brush-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid transparent;
+            color: white;
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .subject-card:active {
-            transform: scale(0.98);
-            background: rgba(255, 255, 255, 0.95);
-        }
-
-        .subject-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 30px;
-            margin-right: 20px;
-        }
-
-        .english-icon {
-            background: linear-gradient(45deg, #ff6b6b, #ff8787);
-        }
-
-        .math-icon {
-            background: linear-gradient(45deg, #4ecdc4, #44a08d);
-        }
-
-        .subject-info h3 {
-            font-size: 20px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
-        }
-
-        .subject-info p {
-            font-size: 14px;
-            color: #666;
-        }
-
-        .back-btn {
-            position: absolute;
-            top: 60px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            display: none;
-            transition: all 0.3s ease;
-        }
-
-        .back-btn.active {
-            display: flex;
-        }
-
-        .back-btn:active {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(0.95);
-        }
-
-        /* 数学练习页面样式 */
-        .math-exercise {
-            padding: 20px;
-            display: none;
-        }
-
-        .math-exercise.active {
-            display: block;
-        }
-
-        .exercise-header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-        }
-
-        .exercise-header h2 {
             font-size: 22px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .exercise-header p {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-
-        .question-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .question-text {
-            font-size: 16px;
-            color: #333;
-            line-height: 1.6;
-            margin-bottom: 20px;
-        }
-
-        .question-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 25px;
-            text-align: center;
-        }
-
-        .options-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .option-card {
-            background: white;
-            border: 2px solid #e1e5e9;
-            border-radius: 15px;
-            padding: 15px;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-height: 120px;
-        }
-
-        .option-card:active {
-            transform: scale(0.98);
-        }
-
-        .option-card.selected {
-            border-color: #4ecdc4;
-            background: #f0fdfc;
-            box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
-        }
-
-        .option-card.correct {
-            border-color: #10b981;
-            background: #f0fdf4;
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
-        }
-
-        .option-card.wrong {
-            border-color: #ef4444;
-            background: #fef2f2;
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
-        }
-
-        .circle-diagram {
-            width: 80px;
-            height: 80px;
             position: relative;
         }
 
-        .circle-svg {
-            width: 100%;
-            height: 100%;
-            transform: rotate(-90deg);
+        .color-btn {
+            border: 3px solid rgba(255, 255, 255, 0.4);
         }
 
-        .submit-btn {
-            width: 100%;
-            background: linear-gradient(45deg, #4ecdc4, #44a08d);
-            color: white;
-            border: none;
-            border-radius: 15px;
-            padding: 15px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
+        .color-btn.red { background: #ff4444; }
+        .color-btn.white { background: #ffffff; color: #000; }
+        .color-btn.green { background: #44ff44; }
+
+        .bg-btn.black { background: #1a1a1a; }
+        .bg-btn.blue { background: #2a3a4a; }
+        .bg-btn.green { background: #1a3a1a; }
+
+        .tool-btn.active, .color-btn.active, .bg-btn.active, .brush-btn.active {
+            background: rgba(74, 144, 226, 0.7);
+            border-color: rgba(74, 144, 226, 1);
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(74, 144, 226, 0.5);
         }
 
-        .submit-btn:active {
-            transform: scale(0.98);
+        .color-btn.active {
+            box-shadow: 0 0 20px currentColor;
         }
 
-        .submit-btn:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
+        .separator {
+            width: 2px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 1px;
         }
 
-        .result-message {
-            text-align: center;
-            padding: 15px;
+        .size-group {
+            display: flex;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
             border-radius: 12px;
-            margin-top: 15px;
+        }
+
+        .size-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            width: 36px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
             font-weight: 600;
-            display: none;
+            transition: all 0.2s;
         }
 
-        .result-message.correct {
-            background: #f0fdf4;
-            color: #059669;
-            border: 2px solid #10b981;
+        .size-btn.active {
+            background: rgba(74, 144, 226, 0.6);
+            color: white;
         }
 
-        .result-message.wrong {
-            background: #fef2f2;
-            color: #dc2626;
-            border: 2px solid #ef4444;
+        #fullscreenBtn {
+            font-size: 20px;
         }
 
-        @media (max-width: 393px) {
-            body {
-                width: 100%;
+        @media (orientation: portrait) {
+            .toolbar {
+                top: auto;
+                bottom: 20px;
+                flex-wrap: wrap;
+                max-width: 95vw;
+                gap: 6px;
             }
+        }
+
+        /* 隐藏工具栏提示 */
+        .tap-hint {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 16px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tap-hint.show {
+            opacity: 1;
         }
     </style>
 </head>
 <body>
-    <div class="safe-area">
-        <button class="back-btn" onclick="goBack()">←</button>
-        
-        <div class="header">
-            <h1>📚 小学学习助手</h1>
-            <p>英语数学轻松学</p>
+    <div class="toolbar" id="toolbar">
+        <!-- 笔刷样式 -->
+        <button id="normalBrush" class="brush-btn active" title="普通笔">✏️</button>
+        <button id="softBrush" class="brush-btn" title="软笔">🖌️</button>
+        <button id="calligraphy" class="brush-btn" title="毛笔">✒️</button>
+
+        <div class="separator"></div>
+
+        <!-- 预设颜色 -->
+        <button id="redColor" class="color-btn red" title="红色粉笔"></button>
+        <button id="whiteColor" class="color-btn white active" title="白色粉笔"></button>
+        <button id="greenColor" class="color-btn green" title="绿色粉笔"></button>
+
+        <div class="separator"></div>
+
+        <!-- 橡皮擦 -->
+        <button id="eraserBtn" class="tool-btn" title="橡皮擦">🧽</button>
+
+        <div class="separator"></div>
+
+        <!-- 粗细调节 -->
+        <div class="size-group">
+            <button id="thinBtn" class="size-btn">细</button>
+            <button id="mediumBtn" class="size-btn active">中</button>
+            <button id="thickBtn" class="size-btn">粗</button>
         </div>
 
-        <!-- 年级选择页面 -->
-        <div class="grade-selector" id="gradeSelector">
-            <div class="grade-title">选择年级</div>
-            <div class="grade-grid">
-                <div class="grade-card" onclick="selectGrade(3)">
-                    <h3>三年级</h3>
-                    <p>基础入门</p>
-                </div>
-                <div class="grade-card" onclick="selectGrade(4)">
-                    <h3>四年级</h3>
-                    <p>知识拓展</p>
-                </div>
-                <div class="grade-card" onclick="selectGrade(5)">
-                    <h3>五年级</h3>
-                    <p>能力提升</p>
-                </div>
-                <div class="grade-card" onclick="selectGrade(6)">
-                    <h3>六年级</h3>
-                    <p>综合运用</p>
-                </div>
-            </div>
-        </div>
+        <div class="separator"></div>
 
-        <!-- 学科选择页面 -->
-        <div class="subject-nav" id="subjectNav">
-            <div class="subject-title" id="gradeTitle">请选择学科</div>
-            <div class="subject-grid">
-                <div class="subject-card" onclick="selectSubject('english')">
-                    <div class="subject-icon english-icon">🇬🇧</div>
-                    <div class="subject-info">
-                        <h3>英语学习</h3>
-                        <p>词汇、语法、口语练习</p>
-                    </div>
-                </div>
-                <div class="subject-card" onclick="selectSubject('math')">
-                    <div class="subject-icon math-icon">🔢</div>
-                    <div class="subject-info">
-                        <h3>数学学习</h3>
-                        <p>计算、应用题、思维训练</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- 背景切换 -->
+        <button id="bgBlack" class="bg-btn black active" title="黑色黑板"></button>
+        <button id="bgBlue" class="bg-btn blue" title="蓝色黑板"></button>
+        <button id="bgGreen" class="bg-btn green" title="绿色黑板"></button>
 
-        <!-- 数学练习页面 -->
-        <div class="math-exercise" id="mathExercise">
-            <div class="exercise-header">
-                <h2 id="exerciseTitle">四年级数学 - 分数认识</h2>
-                <p>选择正确答案</p>
-            </div>
+        <div class="separator"></div>
 
-            <div class="question-card">
-                <div class="question-text">
-                    Joel的妈妈喜欢做饭。在她生日那天，Joel给她一个惊喜，给她准备了一个新的容器，装她的烹饪勺子。圆形容器分为4个相等的部分。
-                </div>
-                <div class="question-title">
-                    哪个分数模型代表容器的一个部分？
-                </div>
-
-                <div class="options-grid">
-                    <div class="option-card" onclick="selectOption(0)">
-                        <div class="circle-diagram">
-                            <svg class="circle-svg" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="#333" stroke-width="2"/>
-                                <path d="M 50 10 A 40 40 0 0 1 90 50 Z" fill="#9f7aea"/>
-                                <path d="M 90 50 A 40 40 0 1 1 50 90 Z" fill="#9f7aea"/>
-                                <path d="M 50 90 A 40 40 0 0 1 10 50 Z" fill="#9f7aea"/>
-                                <line x1="50" y1="10" x2="50" y2="90" stroke="#333" stroke-width="1"/>
-                                <line x1="10" y1="50" x2="90" y2="50" stroke="#333" stroke-width="1"/>
-                            </svg>
-                        </div>
-                    </div>
-
-                    <div class="option-card" onclick="selectOption(1)">
-                        <div class="circle-diagram">
-                            <svg class="circle-svg" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="#333" stroke-width="2"/>
-                                <path d="M 50 10 A 40 40 0 0 1 90 50 Z" fill="#68d391"/>
-                                <line x1="50" y1="10" x2="50" y2="90" stroke="#333" stroke-width="1"/>
-                                <line x1="10" y1="50" x2="90" y2="50" stroke="#333" stroke-width="1"/>
-                            </svg>
-                        </div>
-                    </div>
-
-                    <div class="option-card" onclick="selectOption(2)">
-                        <div class="circle-diagram">
-                            <svg class="circle-svg" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="#333" stroke-width="2"/>
-                                <path d="M 50 10 A 40 40 0 0 1 90 50 Z" fill="#60a5fa"/>
-                                <path d="M 90 50 A 40 40 0 1 1 50 90 Z" fill="#60a5fa"/>
-                                <line x1="50" y1="10" x2="50" y2="90" stroke="#333" stroke-width="1"/>
-                                <line x1="10" y1="50" x2="90" y2="50" stroke="#333" stroke-width="1"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <button class="submit-btn" onclick="submitAnswer()" disabled>提交答案</button>
-                <div class="result-message" id="resultMessage"></div>
-            </div>
-        </div>
+        <!-- 功能按钮 -->
+        <button id="undoBtn" class="tool-btn" title="撤销">↶</button>
+        <button id="redoBtn" class="tool-btn" title="重做">↷</button>
+        <button id="clearBtn" class="tool-btn" title="清空">🗑️</button>
+        <button id="fullscreenBtn" class="tool-btn" title="全屏">⛶</button>
     </div>
 
+    <canvas id="blackboard" class="bg-black"></canvas>
+    <div class="tap-hint" id="tapHint">双击屏幕显示/隐藏工具栏</div>
+
     <script>
-        let currentGrade = null;
-        let selectedOption = null;
-        const correctAnswer = 1; // 第二个选项（1/4）是正确答案
+        const canvas = document.getElementById('blackboard');
+        const ctx = canvas.getContext('2d');
+        const toolbar = document.getElementById('toolbar');
+        const tapHint = document.getElementById('tapHint');
 
-        function selectGrade(grade) {
-            currentGrade = grade;
-            
-            // 添加触觉反馈（iOS设备）
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
+        function resizeCanvas() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(canvas, 0, 0);
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.drawImage(tempCanvas, 0, 0);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let isDrawing = false;
+        let currentColor = '#ffffff';
+        let currentSize = 3;
+        let currentTool = 'pen';
+        let brushStyle = 'normal'; // 'normal', 'soft', 'calligraphy'
+        let lastX = 0;
+        let lastY = 0;
+        let history = [];
+        let historyStep = -1;
+        let toolbarVisible = true;
+        let lastTapTime = 0;
+
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        function saveState() {
+            historyStep++;
+            if (historyStep < history.length) {
+                history.length = historyStep;
             }
-            
-            // 隐藏年级选择，显示学科选择
-            document.getElementById('gradeSelector').style.display = 'none';
-            document.getElementById('subjectNav').classList.add('active');
-            document.querySelector('.back-btn').classList.add('active');
-            
-            // 更新标题
-            document.getElementById('gradeTitle').textContent = `${grade}年级 - 选择学科`;
+            history.push(canvas.toDataURL());
+            if (history.length > 50) history.shift();
         }
 
-        function selectSubject(subject) {
-            // 添加触觉反馈
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
+        function undo() {
+            if (historyStep > 0) {
+                historyStep--;
+                restoreState(history[historyStep]);
             }
-            
-            if (subject === 'math' && currentGrade === 4) {
-                // 显示四年级数学练习
-                document.getElementById('subjectNav').classList.remove('active');
-                document.getElementById('mathExercise').classList.add('active');
-                document.getElementById('exerciseTitle').textContent = `${currentGrade}年级数学 - 分数认识`;
+        }
+
+        function redo() {
+            if (historyStep < history.length - 1) {
+                historyStep++;
+                restoreState(history[historyStep]);
+            }
+        }
+
+        function restoreState(state) {
+            const img = new Image();
+            img.src = state;
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+            };
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            saveState();
+        }
+
+        function getEventPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY, pressure = 0.5;
+
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+                pressure = e.touches[0].force || 0.5;
             } else {
-                const subjectName = subject === 'english' ? '英语' : '数学';
-                alert(`正在进入${currentGrade}年级${subjectName}学习模块...\n\n功能开发中，敬请期待！`);
+                clientX = e.clientX;
+                clientY = e.clientY;
+                pressure = e.pressure || 0.5;
             }
+
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top,
+                pressure: pressure
+            };
         }
 
-        function selectOption(index) {
-            // 添加触觉反馈
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-            
-            // 移除之前选中的状态
-            document.querySelectorAll('.option-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            
-            // 设置当前选中
-            selectedOption = index;
-            document.querySelectorAll('.option-card')[index].classList.add('selected');
-            
-            // 启用提交按钮
-            document.querySelector('.submit-btn').disabled = false;
+        function startDraw(e) {
+            if (e.target !== canvas) return;
+            e.preventDefault();
+            isDrawing = true;
+
+            const pos = getEventPos(e);
+            lastX = pos.x;
+            lastY = pos.y;
+
+            ctx.globalCompositeOperation = currentTool === 'pen' ? 'source-over' : 'destination-out';
+            ctx.strokeStyle = currentColor;
+
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
         }
 
-        function submitAnswer() {
-            // 添加触觉反馈
-            if (navigator.vibrate) {
-                navigator.vibrate(100);
-            }
-            
-            const options = document.querySelectorAll('.option-card');
-            const resultMessage = document.getElementById('resultMessage');
-            const submitBtn = document.querySelector('.submit-btn');
-            
-            // 显示正确答案
-            options.forEach((option, index) => {
-                if (index === correctAnswer) {
-                    option.classList.add('correct');
-                } else if (index === selectedOption && index !== correctAnswer) {
-                    option.classList.add('wrong');
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+
+            const pos = getEventPos(e);
+            let lineWidth = currentSize;
+
+            // 压感支持
+            if (pos.pressure > 0) {
+                if (brushStyle === 'soft' || brushStyle === 'calligraphy') {
+                    lineWidth = currentSize * (0.3 + pos.pressure * 2);
+                } else {
+                    lineWidth = currentSize * (0.5 + pos.pressure * 1.5);
                 }
-            });
-            
-            // 显示结果消息
-            if (selectedOption === correctAnswer) {
-                resultMessage.textContent = '🎉 答对了！这个圆形被分成4等份，绿色部分表示1/4。';
-                resultMessage.className = 'result-message correct';
+            }
+
+            if (currentTool === 'eraser') {
+                lineWidth *= 5;
+            }
+
+            // 笔刷样式
+            if (brushStyle === 'soft') {
+                ctx.globalAlpha = 0.6;
+                ctx.shadowBlur = lineWidth * 0.5;
+                ctx.shadowColor = currentColor;
+            } else if (brushStyle === 'calligraphy') {
+                ctx.globalAlpha = 0.85;
+                const angle = Math.atan2(pos.y - lastY, pos.x - lastX);
+                lineWidth *= (0.7 + Math.abs(Math.sin(angle)) * 0.6);
             } else {
-                resultMessage.textContent = '❌ 答错了。正确答案是绿色的那个，它表示1/4（四分之一）。';
-                resultMessage.className = 'result-message wrong';
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
             }
-            
-            resultMessage.style.display = 'block';
-            submitBtn.textContent = '重新练习';
-            submitBtn.onclick = resetExercise;
+
+            ctx.lineWidth = lineWidth;
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+
+            lastX = pos.x;
+            lastY = pos.y;
         }
 
-        function resetExercise() {
-            // 添加触觉反馈
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-            
-            // 重置选择状态
-            selectedOption = null;
-            document.querySelectorAll('.option-card').forEach(card => {
-                card.classList.remove('selected', 'correct', 'wrong');
-            });
-            
-            // 重置按钮和消息
-            const submitBtn = document.querySelector('.submit-btn');
-            submitBtn.textContent = '提交答案';
-            submitBtn.disabled = true;
-            submitBtn.onclick = submitAnswer;
-            
-            document.getElementById('resultMessage').style.display = 'none';
+        function stopDraw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            isDrawing = false;
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+            saveState();
         }
 
-        function goBack() {
-            // 添加触觉反馈
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
+        // 双击切换工具栏
+        canvas.addEventListener('touchstart', (e) => {
+            const now = Date.now();
+            if (now - lastTapTime < 300) {
+                toolbarVisible = !toolbarVisible;
+                toolbar.classList.toggle('hidden', !toolbarVisible);
+                if (!toolbarVisible) {
+                    tapHint.classList.add('show');
+                    setTimeout(() => tapHint.classList.remove('show'), 2000);
+                }
             }
-            
-            // 检查当前在哪个页面
-            if (document.getElementById('mathExercise').classList.contains('active')) {
-                // 从数学练习回到学科选择
-                document.getElementById('mathExercise').classList.remove('active');
-                document.getElementById('subjectNav').classList.add('active');
-                resetExercise();
-            } else if (document.getElementById('subjectNav').classList.contains('active')) {
-                // 从学科选择回到年级选择
-                document.getElementById('gradeSelector').style.display = 'block';
-                document.getElementById('subjectNav').classList.remove('active');
-                document.querySelector('.back-btn').classList.remove('active');
-                currentGrade = null;
+            lastTapTime = now;
+        });
+
+        // Touch 事件
+        canvas.addEventListener('touchstart', startDraw, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        canvas.addEventListener('touchend', stopDraw, { passive: false });
+        canvas.addEventListener('touchcancel', stopDraw, { passive: false });
+
+        // Mouse 事件
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('mouseout', stopDraw);
+
+        // 笔刷样式切换
+        document.getElementById('normalBrush').addEventListener('click', () => {
+            brushStyle = 'normal';
+            currentTool = 'pen';
+            setActiveButton('brush', 'normalBrush');
+        });
+
+        document.getElementById('softBrush').addEventListener('click', () => {
+            brushStyle = 'soft';
+            currentTool = 'pen';
+            setActiveButton('brush', 'softBrush');
+        });
+
+        document.getElementById('calligraphy').addEventListener('click', () => {
+            brushStyle = 'calligraphy';
+            currentTool = 'pen';
+            setActiveButton('brush', 'calligraphy');
+        });
+
+        // 颜色切换
+        document.getElementById('redColor').addEventListener('click', () => {
+            currentColor = '#ff4444';
+            currentTool = 'pen';
+            setActiveButton('color', 'redColor');
+        });
+
+        document.getElementById('whiteColor').addEventListener('click', () => {
+            currentColor = '#ffffff';
+            currentTool = 'pen';
+            setActiveButton('color', 'whiteColor');
+        });
+
+        document.getElementById('greenColor').addEventListener('click', () => {
+            currentColor = '#44ff44';
+            currentTool = 'pen';
+            setActiveButton('color', 'greenColor');
+        });
+
+        // 橡皮擦
+        document.getElementById('eraserBtn').addEventListener('click', () => {
+            currentTool = 'eraser';
+            document.getElementById('eraserBtn').classList.add('active');
+        });
+
+        // 粗细
+        document.getElementById('thinBtn').addEventListener('click', () => {
+            currentSize = 2;
+            setActiveButton('size', 'thinBtn');
+        });
+
+        document.getElementById('mediumBtn').addEventListener('click', () => {
+            currentSize = 4;
+            setActiveButton('size', 'mediumBtn');
+        });
+
+        document.getElementById('thickBtn').addEventListener('click', () => {
+            currentSize = 7;
+            setActiveButton('size', 'thickBtn');
+        });
+
+        // 背景切换
+        document.getElementById('bgBlack').addEventListener('click', () => {
+            canvas.className = 'bg-black';
+            setActiveButton('bg', 'bgBlack');
+        });
+
+        document.getElementById('bgBlue').addEventListener('click', () => {
+            canvas.className = 'bg-blue';
+            setActiveButton('bg', 'bgBlue');
+        });
+
+        document.getElementById('bgGreen').addEventListener('click', () => {
+            canvas.className = 'bg-green';
+            setActiveButton('bg', 'bgGreen');
+        });
+
+        // 功能按钮
+        document.getElementById('undoBtn').addEventListener('click', undo);
+        document.getElementById('redoBtn').addEventListener('click', redo);
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (confirm('确定要清空黑板吗?')) {
+                clearCanvas();
+            }
+        });
+
+        // 全屏
+        document.getElementById('fullscreenBtn').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log('全屏失败:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        function setActiveButton(group, activeId) {
+            const groups = {
+                'brush': ['.brush-btn'],
+                'color': ['.color-btn'],
+                'size': ['.size-btn'],
+                'bg': ['.bg-btn']
+            };
+
+            if (groups[group]) {
+                groups[group].forEach(selector => {
+                    document.querySelectorAll(selector).forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                });
+                document.getElementById(activeId).classList.add('active');
+
+                if (group !== 'size' && group !== 'bg') {
+                    document.getElementById('eraserBtn').classList.remove('active');
+                }
             }
         }
 
-        // 阻止页面滚动和缩放
-        document.addEventListener('touchmove', function(e) {
-            e.preventDefault();
-        }, { passive: false });
-
-        document.addEventListener('gesturestart', function(e) {
-            e.preventDefault();
-        });
-
-        document.addEventListener('gesturechange', function(e) {
-            e.preventDefault();
-        });
-
-        document.addEventListener('gestureend', function(e) {
-            e.preventDefault();
-        });
-
-        // 优化iOS Safari体验
-        window.addEventListener('load', function() {
-            document.body.style.height = '100vh';
-            setTimeout(function() {
-                window.scrollTo(0, 1);
-            }, 1);
-        });
+        saveState();
     </script>
 </body>
 </html>
